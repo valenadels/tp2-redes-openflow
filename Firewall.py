@@ -1,12 +1,3 @@
-'''
-Coursera:
-- Software Defined Networking (SDN) course
--- Programming Assignment: Layer-2 Firewall Application
-
-Professor: Nick Feamster
-Teaching Assistant: Arpit Gupta
-'''
-
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
