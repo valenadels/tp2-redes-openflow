@@ -22,4 +22,4 @@ class MyTopo(Topo):
             self.addLink(switches[i], switches[i+1])
 
 
-topos = {'mytopo': (lambda: MyTopo())}
+topos = {'mytopo': (lambda: MyTopo(4))}
