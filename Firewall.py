@@ -9,7 +9,6 @@ from pox.lib.addresses import EthAddr
 from collections import namedtuple
 import os
 import json
-''' Add your imports here ... '''
 
 
 
@@ -39,36 +38,44 @@ class Firewall (EventMixin):
         log.debug("Enabling Firewall Module")
 
     def _handle_ConnectionUp (self, event):
-        """
         if event.dpid == 1:  # Identificador del switch
-            # Regla 1: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
-            #msg1 = of.ofp_flow_mod()
-            # msg1.match.dl_type = 0x800  # IPv4
-
-            #msg1.match.tp_dst = 5001  # Puerto destino 5001
-            #msg1.match.nw_proto = 17  # Protocolo UDP
-            #event.connection.send(msg1)
-
+            # Regla 2: Descartar mensajes con destino puerto 80
+            if self.rules[0]['dst_port']:
+                rule1 = of.ofp_flow_mod()
+                rule1.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+                rule1.match.dl_type = 0x800
+                rule1.match.nw_proto = 6
+                event.connection.send(rule1)
+            
             # Regla 2: Bloquear la comunicación entre dos hosts específicos
-            msg2 = of.ofp_flow_mod()
-            msg2.match.nw_src = self.rules[1]["src_ip"]  # Dirección IP del host 1
-            msg2.match.dl_type = 0x800
-            if self.rules[1]["protocol"] == "UDP":
-                msg2.match.nw_proto = 17 # UDP ["protocol"] number
-            elif self.rules[1]["protocol"] == "TCP":
-                msg2.match.nw_proto = 6 # TCP protocol number
-            msg2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
-            event.connection.send(msg2)
+            #msg2 = of.ofp_flow_mod()
+            ##msg2.match.nw_src = self.rules[1]["src_ip"]  # Dirección IP del host 1
+            #msg2.match.dl_type = 0x800
+            #if self.rules[1]["protocol"] == "UDP":
+            #    msg2.match.nw_proto = 17 # UDP ["protocol"] number
+            #elif self.rules[1]["protocol"] == "TCP":
+            #    msg2.match.nw_proto = 6 # TCP protocol number
+            #msg2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
+            #event.connection.send(msg2)
 
+            # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
+            """
+            rule2 = of.ofp_flow_mod()
+            rule2.match.dl_type = 0x800  # IPv4
+            rule2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
+            if self.rules[1]["dst_port"] == "UDP":
+                rule2.match.nw_proto = 17  # Protocolo UDP
+            elif self.rules[1]["dst_port"] == "TCP":
+                rule2.match.nw_proto = 6  # Protocolo TCP
+            event.connection.send(rule2)
+            """
             # Regla 3: Bloquear la comunicación entre dos hosts específicos
-            #msg3 = of.ofp_flow_mod()
-            #msg3.match = of.ofp_match(dl_src="00:00:00:00:00:01", dl_dst="00:00:00:00:00:02") 
-            #msg3.actions.append(of.ofp_action_output(port=of.OFPP_NONE)) 
+            # msg3 = of.ofp_flow_mod()
+            # msg3.match = of.ofp_match(dl_src="00:00:00:00:00:01", dl_dst="00:00:00:00:00:02") 
+            # msg3.actions.append(of.ofp_action_output(port=of.OFPP_NONE))
+            # event.connection.send(msg3)
 
-            # Enviar el mensaje al switch
-            #event.connection.send(msg3)
-        """
-        log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+            log.debug("FIREWALL RULES INSTALLED ON %s", dpidToStr(event.dpid))
 
     def setConfiguration(self):
         file = open('config.json')

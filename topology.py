@@ -1,9 +1,12 @@
 from mininet.topo import Topo
 
 
-class MyTopo(Topo):
+class Tp2Topo(Topo):
     def __init__(self, n_switches):
         Topo.__init__(self)
+        if n_switches < 1:
+            raise Exception("Number of switches must be at least 1")
+        
 
         hosts = []
         for i in range(4):
@@ -19,7 +22,8 @@ class MyTopo(Topo):
         self.addLink(hosts[3], switches[n_switches-1])
 
         for i in range(n_switches-1):
+            print("connect swith {} with {}".format(i, i+1))
             self.addLink(switches[i], switches[i+1])
 
 
-topos = {'mytopo': (lambda: MyTopo(4))}
+topos = {'tp2': Tp2Topo}
