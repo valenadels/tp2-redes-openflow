@@ -10,11 +10,11 @@ class Tp2Topo(Topo):
 
         hosts = []
         for i in range(4):
-            hosts.append(self.addHost('h'+str(i)))
+            hosts.append(self.addHost('h'+str(i + 1)))
 
         switches = []
         for i in range(n_switches):
-            switches.append(self.addSwitch('s'+str(i)))
+            switches.append(self.addSwitch('s'+str(i+1)))
 
         self.addLink(hosts[0], switches[0])
         self.addLink(hosts[1], switches[0])
@@ -22,7 +22,7 @@ class Tp2Topo(Topo):
         self.addLink(hosts[3], switches[n_switches-1])
 
         for i in range(n_switches-1):
-            print("connect swith {} with {}".format(i, i+1))
+            print("connect swith {} with {}".format(i+1, i+2))
             self.addLink(switches[i], switches[i+1])
 
 

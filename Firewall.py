@@ -5,77 +5,26 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
 from pox.lib.util import dpidToStr
-from pox.lib.addresses import EthAddr
-from collections import namedtuple
+from pox.lib.addresses import IPAddr
+import pox.lib.packet as pkt
 import os
 import json
-
 
 
 log = core.getLogger()
 policyFile = "%s/pox/pox/misc/firewall-policies.csv" % os.environ[ 'HOME' ]
 
-''' 
-En POX, que es un controlador de redes definidas por software (SDN) basado en OpenFlow, ofp_flow_mod es un mensaje OpenFlow utilizado para modificar o agregar flujos en un switch.
-La estructura ofp_flow_mod se utiliza para especificar las reglas que determinan cómo se deben procesar los paquetes en el switch. Algunos de los parámetros importantes que se pueden incluir en un mensaje ofp_flow_mod son:
-
-* match: Especifica las condiciones que deben cumplir los paquetes para que la regla se aplique. Puede incluir criterios como direcciones MAC, direcciones IP, puertos, etc.
-* actions: Indica las acciones que deben realizarse cuando un paquete coincide con las condiciones especificadas en el campo match. Puede incluir acciones como reenviar a un puerto específico, modificar campos del encabezado del paquete, descartar el paquete, etc.
-'''
-
-"""
-Prerequisitos:
-- 1st -> SET IP MATCH: IPV4 or IPV6
-- 2nd -> SET TRANSPORT MATCH: TCP or UDP
-- 3rd -> SET PORT or DIR MATCH
-"""
 
 class Firewall (EventMixin):
-
     def __init__ (self):
         self.listenTo(core.openflow)
         self.setConfiguration()
         log.debug("Enabling Firewall Module")
 
     def _handle_ConnectionUp (self, event):
-        if event.dpid == 1:  # Identificador del switch
-            # Regla 2: Descartar mensajes con destino puerto 80
-            if self.rules[0]['dst_port']:
-                rule1 = of.ofp_flow_mod()
-                rule1.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
-                rule1.match.dl_type = 0x800
-                rule1.match.nw_proto = 6
-                event.connection.send(rule1)
-            
-            # Regla 2: Bloquear la comunicación entre dos hosts específicos
-            #msg2 = of.ofp_flow_mod()
-            ##msg2.match.nw_src = self.rules[1]["src_ip"]  # Dirección IP del host 1
-            #msg2.match.dl_type = 0x800
-            #if self.rules[1]["protocol"] == "UDP":
-            #    msg2.match.nw_proto = 17 # UDP ["protocol"] number
-            #elif self.rules[1]["protocol"] == "TCP":
-            #    msg2.match.nw_proto = 6 # TCP protocol number
-            #msg2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
-            #event.connection.send(msg2)
-
-            # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
-            """
-            rule2 = of.ofp_flow_mod()
-            rule2.match.dl_type = 0x800  # IPv4
-            rule2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
-            if self.rules[1]["dst_port"] == "UDP":
-                rule2.match.nw_proto = 17  # Protocolo UDP
-            elif self.rules[1]["dst_port"] == "TCP":
-                rule2.match.nw_proto = 6  # Protocolo TCP
-            event.connection.send(rule2)
-            """
-            # Regla 3: Bloquear la comunicación entre dos hosts específicos
-            # msg3 = of.ofp_flow_mod()
-            # msg3.match = of.ofp_match(dl_src="00:00:00:00:00:01", dl_dst="00:00:00:00:00:02") 
-            # msg3.actions.append(of.ofp_action_output(port=of.OFPP_NONE))
-            # event.connection.send(msg3)
-
-            log.debug("FIREWALL RULES INSTALLED ON %s", dpidToStr(event.dpid))
+        log.info("ConnectionUp for switch {}: ".format(event.dpid))
+        if event.dpid == self.swith_id:  # Identificador del switch donde se instalarán las reglas
+            self.setRules(event)
 
     def setConfiguration(self):
         file = open('config.json')
@@ -83,6 +32,52 @@ class Firewall (EventMixin):
         file.close()
         self.swith_id = config["firewall_id"]
         self.rules = config["rules"]
+    
+    def setRules(self, event):
+        # Regla 1: Descartar mensajes con puerto destino 80
+        rule1_udp = of.ofp_flow_mod()
+        rule1_udp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+        rule1_udp.match.dl_type = pkt.ethernet.IP_TYPE
+        rule1_udp.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
+        event.connection.send(rule1_udp)
+
+        rule1_tcp = of.ofp_flow_mod()
+        rule1_tcp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+        rule1_tcp.match.dl_type = self.typeIp(self.rules[0]["ip_type"])
+        rule1_tcp.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+        event.connection.send(rule1_tcp)
+        
+        # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
+        rule2 = of.ofp_flow_mod()
+        rule2.match.dl_type = pkt.ethernet.IP_TYPE
+        if self.rules[1]["protocol"] == "UDP":
+            rule2.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
+        elif self.rules[1]["protocol"] == "TCP":
+            rule2.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+        rule2.match.nw_src = IPAddr(self.rules[1]["src_ip"])  # Dirección IP del host 1
+        rule2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
+        event.connection.send(rule2)
+
+        # Regla 3: Bloqueo de comunicacion entre 2 hosts cualquiera (bilateral).
+        rule3_1 = of.ofp_flow_mod()
+        rule3_1.match.dl_type = pkt.ethernet.IP_TYPE
+        rule3_1.match.nw_src = IPAddr(self.rules[2]["src_ip"])
+        rule3_1.match.nw_dst = IPAddr(self.rules[2]["dst_ip"])
+        event.connection.send(rule3_1)
+        
+        rule3_2 = of.ofp_flow_mod()
+        rule3_2.match.dl_type = pkt.ethernet.IP_TYPE
+        rule3_2.match.nw_src = IPAddr(self.rules[2]["dst_ip"])
+        rule3_2.match.nw_dst = IPAddr(self.rules[2]["src_ip"])
+        event.connection.send(rule3_2)
+
+        log.debug("FIREWALL RULES INSTALLED ON SWITCH %s", dpidToStr(event.dpid))
+
+    def typeIp(self, type):
+        if type == "ipv4":
+            return pkt.ethernet.IP_TYPE
+        elif type == "ipv6":
+            return  pkt.ethernet.IPV6_TYPE
 
 def launch():
     core.registerNew(Firewall)
