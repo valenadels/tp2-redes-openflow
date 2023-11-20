@@ -1,3 +1,6 @@
+#!/bin/sh -
+# -*- coding: utf-8 -*-
+
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
@@ -36,6 +39,7 @@ class Firewall (EventMixin):
         log.debug("Enabling Firewall Module")
 
     def _handle_ConnectionUp (self, event):
+        """
         if event.dpid == 1:  # Identificador del switch
             # Regla 1: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
             #msg1 = of.ofp_flow_mod()
@@ -63,8 +67,8 @@ class Firewall (EventMixin):
 
             # Enviar el mensaje al switch
             #event.connection.send(msg3)
-
-            log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+        """
+        log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
 
     def setConfiguration(self):
         file = open('config.json')
