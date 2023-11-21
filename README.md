@@ -39,10 +39,10 @@ Se propone desarrollar una topología parametrizable sobre la cual probaremos di
         iperf -c [IP SERVIDOR]  -p [PUERTO SERVIDOR] -b [x] -n [x] -l [x] -t [x]
     ```
     
-    b - limita ancho de banda (ej 1Mb)
+    b - limita ancho de banda (ej 200 bps)
     
-    n - limita cantidad de paquetes (ej 20)
+    n - limita cantidad de paquetes (ej 20 paquetes)
 
-    l - limita tamaño paquetes (ej 0 por ancho de banda)
+    l - limita tamaño paquetes (ej 25 bytes)
     
-    t - limita tiempo de conexion (ej 10 seg) 
+    t - limita tiempo de conexion (ej 5 seg)

@@ -1,5 +1,5 @@
 {
-  "firewall_id": 3,
+  "firewall_id": 1,
   "rules": [
     {
       "dst_port": 80,
