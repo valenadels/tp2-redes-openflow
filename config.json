@@ -1,20 +1,19 @@
 {
-  "firewall_id": 1,
+  "firewall_id": 3,
   "rules": [
     {
-      "rule_id": 1,
-      "dst_port": 80
+      "dst_port": 80,
+      "ip_type": "ipv4"
     },
     {
-      "rule_id": 2,
       "src_ip": "10.0.0.1",
       "dst_port": 5001,
-      "protocol": "UDP"
+      "protocol": "UDP",
+      "ip_type": "ipv4"
     },
     {
-      "rule_id": 3,
-      "dir_src_host": "00:00:00:00:00:01",
-      "dir_dst_host": "00:00:00:00:00:02"
+      "src_ip": "10.0.0.1",
+      "dst_ip": "10.0.0.4"
     }
   ]
 }
