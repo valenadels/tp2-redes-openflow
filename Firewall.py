@@ -28,8 +28,8 @@ class Firewall (EventMixin):
 
     def setRules(self, event):
         # Regla 1: Descartar mensajes con puerto destino 80
-        self.portRule(pkt.ipv4.UDP_PROTOCOL)
-        self.portRule(pkt.ipv4.TCP_PROTOCOL)
+        self.portRule(event, pkt.ipv4.UDP_PROTOCOL)
+        self.portRule(event, pkt.ipv4.TCP_PROTOCOL)
 
         # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
         rule2 = of.ofp_flow_mod()
