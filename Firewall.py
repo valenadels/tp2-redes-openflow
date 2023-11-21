@@ -23,15 +23,10 @@ class Firewall (EventMixin):
 
     def _handle_ConnectionUp (self, event):
         log.info("ConnectionUp for switch {}: ".format(event.dpid))
-        if event.dpid == self.swith_id:  # Identificador del switch donde se instalarán las reglas
+        if event.dpid == self.swith_id: # Identificador del switch donde se instalarán las reglas
             self.setRules(event)
 
     def setRules(self, event):
-        '''
-        for rule in self.rules:
-            flow_mod = self.create_flow_mod(rule)
-            event.connection.send(flow_mod)
-        '''
         # Regla 1: Descartar mensajes con puerto destino 80
         rule1_udp = of.ofp_flow_mod()
         rule1_udp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
@@ -69,34 +64,12 @@ class Firewall (EventMixin):
         rule3_2.match.nw_dst = IPAddr(self.rules[2]["src_ip"])
         event.connection.send(rule3_2)
 
-        log.debug("FIREWALL RULES INSTALLED ON SWITCH %s", dpidToStr(event.dpid))
-
-    def create_flow_mod(self, rule):
-        flow_mod = of.ofp_flow_mod()
-        flow_mod.match.dl_type = self.mapIpType(rule["ip_type"])
-
-        if "src_ip" in rule:
-            flow_mod.match.nw_src = IPAddr(rule["src_ip"])
-        if "dst_ip" in rule:
-            flow_mod.match.nw_dst = IPAddr(rule["dst_ip"])
-        if "src_port" in rule:
-            flow_mod.match.tp_src = rule["src_port"]
-        if "dst_port" in rule:
-            flow_mod.match.tp_dst = rule["dst_port"]
-        if "protocol" in rule:
-            if rule["protocol"] == "UDP":
-                flow_mod.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
-            elif rule["protocol"] == "TCP":
-                flow_mod.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
-
-        return flow_mod
-
+        log.info("FIREWALL RULES INSTALLED ON SWITCH %s", dpidToStr(event.dpid))
 
     def mapIpType(self, type):
         if type == "ipv6":
             return  pkt.ethernet.IPV6_TYPE
         return pkt.ethernet.IP_TYPE
-
 
     def setConfiguration(self):
         file = open('config.json')
@@ -104,6 +77,7 @@ class Firewall (EventMixin):
         file.close()
         self.swith_id = config["firewall_id"]
         self.rules = config["rules"]
+
     
 def launch():
     core.registerNew(Firewall)

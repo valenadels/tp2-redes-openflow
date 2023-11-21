@@ -5,7 +5,15 @@ Se propone desarrollar una topología parametrizable sobre la cual probaremos di
     - POX
     - Python 2.7
     - iperf
-- Correr pox en una terminal con Python 2:
+
+- Instalar Python 2.7 en Ubuntu:
+    ```bash
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt-get update
+        sudo apt-get install python2.7
+    ```
+
+- Correr pox en una terminal con Python 2.7:
     ```bash
     python2.7 pox.py log.level --DEBUG openflow.of_01 forwarding.l2_learning Firewall
     ```
@@ -13,7 +21,7 @@ Se propone desarrollar una topología parametrizable sobre la cual probaremos di
 
 - Levantar la topología en otra terminal, especificando cantidad de switches deseada (> 0):
     ```bash
-        sudo mn --custom topology.py --topo tp2,n_switches=[n] --controller remote
+        sudo mn --custom topology.py --topo tp2,n_switches=[n] --arp --switch ovsk --controller remote
     ```
     
 - Una vez lograda la topología, se debe verificar el correcto funcionamiento de la red mediante el comando pingall.
