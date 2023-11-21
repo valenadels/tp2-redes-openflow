@@ -27,9 +27,47 @@ class Firewall (EventMixin):
             self.setRules(event)
 
     def setRules(self, event):
-        for rule in self.rules["rules"]:
+        '''
+        for rule in self.rules:
             flow_mod = self.create_flow_mod(rule)
             event.connection.send(flow_mod)
+        '''
+        # Regla 1: Descartar mensajes con puerto destino 80
+        rule1_udp = of.ofp_flow_mod()
+        rule1_udp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+        rule1_udp.match.dl_type = self.mapIpType(self.rules[0]["ip_type"])
+        rule1_udp.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
+        event.connection.send(rule1_udp)
+
+        rule1_tcp = of.ofp_flow_mod()
+        rule1_tcp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+        rule1_tcp.match.dl_type = self.mapIpType(self.rules[0]["ip_type"])
+        rule1_tcp.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+        event.connection.send(rule1_tcp)
+
+        # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
+        rule2 = of.ofp_flow_mod()
+        rule2.match.dl_type = self.mapIpType(self.rules[1]["ip_type"])
+        if self.rules[1]["protocol"] == "UDP":
+            rule2.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
+        elif self.rules[1]["protocol"] == "TCP":
+            rule2.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+        rule2.match.nw_src = IPAddr(self.rules[1]["src_ip"])  # Dirección IP del host 1
+        rule2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
+        event.connection.send(rule2)
+
+        # Regla 3: Bloqueo de comunicacion entre 2 hosts cualquiera (bilateral).
+        rule3_1 = of.ofp_flow_mod()
+        rule3_1.match.dl_type = self.mapIpType(self.rules[2]["ip_type"])
+        rule3_1.match.nw_src = IPAddr(self.rules[2]["src_ip"])
+        rule3_1.match.nw_dst = IPAddr(self.rules[2]["dst_ip"])
+        event.connection.send(rule3_1)
+
+        rule3_2 = of.ofp_flow_mod()
+        rule3_2.match.dl_type = self.mapIpType(self.rules[2]["ip_type"])
+        rule3_2.match.nw_src = IPAddr(self.rules[2]["dst_ip"])
+        rule3_2.match.nw_dst = IPAddr(self.rules[2]["src_ip"])
+        event.connection.send(rule3_2)
 
         log.debug("FIREWALL RULES INSTALLED ON SWITCH %s", dpidToStr(event.dpid))
 
