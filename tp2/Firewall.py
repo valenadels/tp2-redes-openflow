@@ -55,10 +55,9 @@ class Firewall (EventMixin):
 
 
     def mapIpType(self, type):
-        if type == "ipv4":
-            return pkt.ethernet.IP_TYPE
-        elif type == "ipv6":
+        if type == "ipv6":
             return  pkt.ethernet.IPV6_TYPE
+        return pkt.ethernet.IP_TYPE
 
 
     def setConfiguration(self):
