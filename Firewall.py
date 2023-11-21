@@ -34,40 +34,40 @@ class Firewall (EventMixin):
         # Regla 2: Descartar mensajes desde el host 1 al puerto 5001 usando UDP
         rule2 = of.ofp_flow_mod()
         rule2.match.dl_type = self.mapIpType(self.rules[1]["ip_type"])
-        if self.rules[1]["protocol"] == "UDP":
-            rule2.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
-        elif self.rules[1]["protocol"] == "TCP":
-            rule2.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+        rule2.match.nw_proto = self.mapTransportProtocol(self.rules[1]["protocol"])
         rule2.match.nw_src = IPAddr(self.rules[1]["src_ip"])  # Dirección IP del host 1
         rule2.match.tp_dst = self.rules[1]["dst_port"]  # Puerto destino 5001
         event.connection.send(rule2)
 
         # Regla 3: Bloqueo de comunicacion entre 2 hosts cualquiera (bilateral).
-        rule3_1 = of.ofp_flow_mod()
-        rule3_1.match.dl_type = self.mapIpType(self.rules[2]["ip_type"])
-        rule3_1.match.nw_src = IPAddr(self.rules[2]["src_ip"])
-        rule3_1.match.nw_dst = IPAddr(self.rules[2]["dst_ip"])
-        event.connection.send(rule3_1)
-
-        rule3_2 = of.ofp_flow_mod()
-        rule3_2.match.dl_type = self.mapIpType(self.rules[2]["ip_type"])
-        rule3_2.match.nw_src = IPAddr(self.rules[2]["dst_ip"])
-        rule3_2.match.nw_dst = IPAddr(self.rules[2]["src_ip"])
-        event.connection.send(rule3_2)
+        self.hostRule(event, self.rules[2]["src_ip"], self.rules[2]["dst_ip"])
+        self.hostRule(event, self.rules[2]["dst_ip"], self.rules[2]["src_ip"])
 
         log.info("FIREWALL RULES INSTALLED ON SWITCH %s", dpidToStr(event.dpid))
 
     def portRule(self, event, transport_protocol):
-        rule1_tcp = of.ofp_flow_mod()
-        rule1_tcp.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
-        rule1_tcp.match.dl_type = self.mapIpType(self.rules[0]["ip_type"])
-        rule1_tcp.match.nw_proto = transport_protocol
-        event.connection.send(rule1_tcp)
+        rule = of.ofp_flow_mod()
+        rule.match.tp_dst = self.rules[0]["dst_port"]  # Puerto destino 80
+        rule.match.dl_type = self.mapIpType(self.rules[0]["ip_type"])
+        rule.match.nw_proto = transport_protocol
+        event.connection.send(rule)
+
+    def hostRule(self, event, nw_src, nw_dst):
+        rule = of.ofp_flow_mod()
+        rule.match.dl_type = self.mapIpType(self.rules[2]["ip_type"])
+        rule.match.nw_src = IPAddr(nw_src)
+        rule.match.nw_dst = IPAddr(nw_dst)
+        event.connection.send(rule)
     
     def mapIpType(self, type):
         if type == "ipv6":
             return  pkt.ethernet.IPV6_TYPE
         return pkt.ethernet.IP_TYPE
+    
+    def mapTransportProtocol(self, protocol):
+        if protocol == "UDP":
+            return pkt.ipv4.UDP_PROTOCOL
+        return pkt.ipv4.TCP_PROTOCOL
 
     def setConfiguration(self):
         file = open('config.json')
